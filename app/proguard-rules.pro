@@ -1,0 +1,5 @@
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.**
+-keep,includedescriptorclasses class hu.rmz.prefiscore.**$$serializer { *; }
+-keepclassmembers class hu.rmz.prefiscore.** { *** Companion; }
+-keepclasseswithmembers class hu.rmz.prefiscore.** { kotlinx.serialization.KSerializer serializer(...); }
