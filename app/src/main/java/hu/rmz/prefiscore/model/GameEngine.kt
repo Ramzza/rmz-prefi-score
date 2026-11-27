@@ -169,7 +169,7 @@ object GameEngine {
     fun draftToRound(game: Game, now: Long): Round? {
         val d = game.draft ?: return null
         val dealer = Table.currentDealer(game) ?: return null
-        val number = game.rounds.size + 1
+        val number = game.playedRounds.size + 1
         return if (d.korpassz) {
             Round(
                 number = number, kind = RoundKind.KORPASSZ, dealerId = dealer,
@@ -191,6 +191,36 @@ object GameEngine {
     fun commit(game: Game, now: Long): Game {
         val round = draftToRound(game, now) ?: return game
         val g = game.copy(rounds = game.rounds + round, draft = RoundDraft(startedAt = now), updatedAt = now)
+        return updateStatus(g, now)
+    }
+
+    /**
+     * Pontkorrekció hozzáadása: a fenti pontok, pince-szobák és druzsok közvetlen módosítása.
+     * A [nextDealerId] lesz a következő kör osztója.
+     */
+    fun addAdjustment(game: Game, adjustment: Adjustment, nextDealerId: String, now: Long): Game {
+        val empty = adjustment.upper.values.all { it == 0 } && adjustment.pince.all { it.amount == 0 } &&
+            adjustment.druzsWritten == 0 && adjustment.druzsCrossed == 0
+        val dealerUnchanged = Table.currentDealer(game) == nextDealerId
+        if (empty && dealerUnchanged) return game
+        val round = Round(
+            number = game.playedRounds.size,
+            kind = RoundKind.ADJUSTMENT,
+            dealerId = nextDealerId,
+            playingIds = Table.active(game).map { it.id },
+            startedAt = now,
+            endedAt = now,
+            adjustment = adjustment.copy(
+                upper = adjustment.upper.filterValues { it != 0 },
+                pince = adjustment.pince.filter { it.amount != 0 },
+            ),
+        )
+        val d = game.draft
+        val g = game.copy(
+            rounds = game.rounds + round,
+            draft = RoundDraft(startedAt = d?.startedAt ?: now, pausedMs = d?.pausedMs ?: 0, pausedAt = d?.pausedAt),
+            updatedAt = now,
+        )
         return updateStatus(g, now)
     }
 

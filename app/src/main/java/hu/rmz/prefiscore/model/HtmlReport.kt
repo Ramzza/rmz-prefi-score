@@ -32,7 +32,10 @@ object Format {
         s.replace(Regex("[^A-Za-z0-9áéíóöőúüűÁÉÍÓÖŐÚÜŰ_-]+"), "_").trim('_').take(40).ifEmpty { "jatek" }
 
     /** Egy kör rövid leírása. */
-    fun roundTitle(game: Game, r: Round): String = if (r.kind == RoundKind.KORPASSZ) "Körpassz" else buildString {
+    fun roundTitle(game: Game, r: Round): String = if (r.isAdjustment) {
+        val a = r.adjustment
+        (if (a?.source == "image") "Korrekció képről" else "Kézi korrekció") + (a?.note?.takeIf { it.isNotBlank() }?.let { " – $it" } ?: "")
+    } else if (r.kind == RoundKind.KORPASSZ) "Körpassz" else buildString {
         append(game.name(r.declarerId)).append(" – ").append(Rules.gameName(r.game))
         if (r.felkez) append(", félkéz") else if (!r.talon) append(", talon nélkül")
         if (r.contra > 0) append(", ").append(Rules.contraNames[r.contra])
@@ -78,7 +81,7 @@ th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:
         sb.append("<div class=\"meta\">${esc(players.joinToString(", ") { it.name })}<br>")
         sb.append("Kezdés: ${Format.dateTime(game.createdAt)} · Állapot: ${Format.statusText(game.status)}")
         game.finishedAt?.let { sb.append(" · Vége: ${Format.dateTime(it)}") }
-        sb.append("<br>Körök: ${game.rounds.size} · Játékidő: ${Format.duration(gs.playMs)} · Átlagos kör: ${Format.duration(gs.avgRoundMs)}")
+        sb.append("<br>Körök: ${game.playedRounds.size} · Játékidő: ${Format.duration(gs.playMs)} · Átlagos kör: ${Format.duration(gs.avgRoundMs)}")
         sb.append("<br>Hátralévő pont fent: ${st.remaining} · Aktív druzs: ${st.druzsActive}</div>")
 
         sb.append("<h2>Végeredmény</h2>")
@@ -112,8 +115,9 @@ th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:
             val pince = res.pince.joinToString("<br>") { "${esc(game.name(it.ownerId))} → ${esc(game.name(it.targetId))}: ${it.amount}" }
             var desc = esc(Format.roundTitle(game, r))
             if (r.tricks.isNotEmpty()) desc += "<br><span class=small>Vitelek: ${esc(Format.tricksText(game, r))}</span>"
-            if (res.druzsActive) desc += "<br><span class=small>druzs</span>"
-            sb.append("<tr><td>${r.number}</td><td>${esc(game.name(r.dealerId))}</td><td style=\"text-align:left\">$desc</td><td>${if (res.value > 0) res.value else ""}</td><td>$upper</td><td>$pince</td><td>${Format.duration(r.durationMs)}</td></tr>")
+            if (res.druzsActive && !r.isAdjustment) desc += "<br><span class=small>druzs</span>"
+            if (r.isAdjustment && (res.druzsAdded != 0 || res.druzsCrossed != 0)) desc += "<br><span class=small>druzs: ${Format.signed(res.druzsAdded)} felírva, ${Format.signed(res.druzsCrossed)} áthúzva</span>"
+            sb.append("<tr><td>${if (r.isAdjustment) "K" else r.number.toString()}</td><td>${esc(game.name(r.dealerId))}</td><td style=\"text-align:left\">$desc</td><td>${if (res.value > 0) res.value else ""}</td><td>$upper</td><td>$pince</td><td>${Format.duration(r.durationMs)}</td></tr>")
         }
         sb.append("</table></div>")
         sb.append("<p class=\"small\">Végső pont = fent × 10 + saját pince − a többiek pincéjében levő saját szoba. Készült: ${Format.dateTime(now)} · Prefi pontozó</p>")

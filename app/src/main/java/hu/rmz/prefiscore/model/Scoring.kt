@@ -51,6 +51,8 @@ object Table {
         val active = active(game)
         if (active.isEmpty()) return null
         val last = game.rounds.lastOrNull() ?: return active.last().id
+        // Korrekció után a benne megadott osztó következik (ha nincs kispadon).
+        if (last.isAdjustment && active.any { it.id == last.dealerId }) return last.dealerId
         val seats = game.players
         val idx = seats.indexOfFirst { it.id == last.dealerId }
         if (idx < 0) return active.last().id
@@ -118,6 +120,13 @@ object Scoring {
         val penalized = mutableListOf<String>()
         val crossed = if (druzsActive) 1 else 0
         val playingCount = round.playingIds.size
+
+        if (round.kind == RoundKind.ADJUSTMENT) {
+            val adj = round.adjustment ?: Adjustment()
+            upper.putAll(adj.upper.filterValues { it != 0 })
+            adj.pince.filter { it.amount != 0 }.forEach { pince += PinceEntry(it.ownerId, it.targetId, it.amount) }
+            return RoundResult(round, 0, druzsActive, upper, pince, penalized, adj.druzsCrossed, adj.druzsWritten)
+        }
 
         if (round.kind == RoundKind.KORPASSZ) {
             for (id in round.playingIds) {

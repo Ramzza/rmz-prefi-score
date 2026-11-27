@@ -15,8 +15,8 @@ android {
         applicationId = "hu.rmz.prefiscore"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
     }
 
     buildTypes {
@@ -38,6 +38,15 @@ android {
         compose = true
     }
 
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/DEPENDENCIES", "META-INF/LICENSE*", "META-INF/NOTICE*", "META-INF/*.kotlin_module",
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF", "META-INF/INDEX.LIST", "META-INF/io.netty.versions.properties",
+            )
+        }
+    }
+
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all { it.maxHeapSize = "2g" }
@@ -53,9 +62,13 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.core:core-ktx:1.19.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.13.0")
+    // Kép → JSON felismerés (Claude API)
+    implementation("com.anthropic:anthropic-java:3.14.0")
+    implementation("org.jetbrains.kotlin:kotlin-reflect:2.4.21")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.18.1")
     testImplementation("androidx.compose.ui:ui-test-junit4")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

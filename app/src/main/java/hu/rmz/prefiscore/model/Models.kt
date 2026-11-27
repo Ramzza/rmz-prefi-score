@@ -13,7 +13,23 @@ data class Player(
 )
 
 @Serializable
-enum class RoundKind { GAME, KORPASSZ }
+enum class RoundKind { GAME, KORPASSZ, ADJUSTMENT }
+
+/** Pince-változás egy korrekcióban: [ownerId] pincéjében [targetId] szobája [amount]-tal változik. */
+@Serializable
+data class PinceDelta(val ownerId: String, val targetId: String, val amount: Int)
+
+/** Közvetlen pontkorrekció (kép alapú import / frissítés vagy kézi javítás). */
+@Serializable
+data class Adjustment(
+    val upper: Map<String, Int> = emptyMap(),
+    val pince: List<PinceDelta> = emptyList(),
+    val druzsWritten: Int = 0,
+    val druzsCrossed: Int = 0,
+    /** "image" vagy "manual". */
+    val source: String = "manual",
+    val note: String = "",
+)
 
 @Serializable
 data class Round(
@@ -35,8 +51,11 @@ data class Round(
     val startedAt: Long,
     val endedAt: Long,
     val pausedMs: Long = 0,
+    /** Csak [RoundKind.ADJUSTMENT] esetén. A [dealerId] ilyenkor a következő kör osztója. */
+    val adjustment: Adjustment? = null,
 ) {
     val durationMs: Long get() = (endedAt - startedAt - pausedMs).coerceAtLeast(0)
+    val isAdjustment: Boolean get() = kind == RoundKind.ADJUSTMENT
 }
 
 @Serializable
@@ -85,6 +104,9 @@ data class Game(
     val importedAt: Long? = null,
 ) {
     fun player(id: String?): Player? = players.firstOrNull { it.id == id }
+
+    /** A ténylegesen lejátszott körök (korrekciók nélkül). */
+    val playedRounds: List<Round> get() = rounds.filter { !it.isAdjustment }
     fun name(id: String?): String = player(id)?.name ?: "?"
 
     /** Összes játékidő a munkamenetek alapján. */

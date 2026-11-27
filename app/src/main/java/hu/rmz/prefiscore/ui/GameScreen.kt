@@ -68,7 +68,7 @@ fun GameScreen(app: AppState, session: GameSession) {
     Scaffold(
         topBar = {
             AppTopBar(
-                title = if (finished) "Játék vége" else "${game.rounds.size + 1}. kör",
+                title = if (finished) "Játék vége" else "${game.playedRounds.size + 1}. kör",
                 subtitle = "Hátra fent: ${standing.remaining} pont",
                 onBack = { app.back() },
             ) {
@@ -77,6 +77,8 @@ fun GameScreen(app: AppState, session: GameSession) {
                 IconButton(onClick = { menu = true }) { Icon(AppIcons.More, "Menü") }
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(text = { Text("Kispad / játékosok") }, enabled = !finished, onClick = { menu = false; showBench = true })
+                    DropdownMenuItem(text = { Text("Pontok frissítése képről") }, onClick = { menu = false; app.startSheetFlow(SheetMode.UPDATE_FROM_IMAGE) })
+                    DropdownMenuItem(text = { Text("Pontok kézi javítása") }, onClick = { menu = false; app.startSheetFlow(SheetMode.MANUAL) })
                     HorizontalDivider()
                     DropdownMenuItem(text = { Text("Mentés JSON fájlba") }, onClick = {
                         menu = false; saveJson("${gameFileBase(game)}.json", exportText())
@@ -90,7 +92,7 @@ fun GameScreen(app: AppState, session: GameSession) {
                     DropdownMenuItem(text = { Text("Eredmény megosztása (HTML)") }, onClick = { menu = false; shareHtml(ctx, game) })
                     HorizontalDivider()
                     DropdownMenuItem(
-                        text = { Text("Utolsó kör törlése") }, enabled = game.rounds.isNotEmpty(),
+                        text = { Text("Utolsó bejegyzés törlése") }, enabled = game.rounds.isNotEmpty(),
                         onClick = { menu = false; confirmRemove = true },
                     )
                     DropdownMenuItem(
@@ -123,8 +125,14 @@ fun GameScreen(app: AppState, session: GameSession) {
 
     if (confirmRemove) AlertDialog(
         onDismissRequest = { confirmRemove = false },
-        title = { Text("Utolsó kör törlése?") },
-        text = { Text("A(z) ${game.rounds.size}. kör törlődik (visszavonással visszahozható).") },
+        title = { Text("Utolsó bejegyzés törlése?") },
+        text = {
+            val last = game.rounds.lastOrNull()
+            Text(
+                (if (last?.isAdjustment == true) "Az utolsó pontkorrekció" else "A(z) ${game.playedRounds.size}. kör") +
+                    " törlődik (visszavonással visszahozható).",
+            )
+        },
         confirmButton = {
             TextButton(onClick = { confirmRemove = false; session.update(GameEngine::removeLastRound) }) { Text("Törlés") }
         },

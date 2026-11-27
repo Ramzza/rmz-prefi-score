@@ -70,6 +70,10 @@ fun HomeScreen(app: AppState, onImport: () -> Unit) {
             Button(onClick = { app.navigate(Screen.NewGame) }, modifier = Modifier.fillMaxWidth().height(56.dp)) {
                 Text("Új játék", style = MaterialTheme.typography.titleMedium)
             }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = { app.startSheetFlow(SheetMode.NEW_GAME) }, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+                Text("Új játék papírról (fotó alapján)")
+            }
 
             val open = app.sortedGames.filter { it.status != GameStatus.FINISHED }
             if (open.isNotEmpty()) {
@@ -90,6 +94,8 @@ fun HomeScreen(app: AppState, onImport: () -> Unit) {
                 FilledTonalButton(onClick = { app.navigate(Screen.Rules) }, Modifier.weight(1f).height(52.dp)) { Text("Szabályok") }
                 FilledTonalButton(onClick = onImport, Modifier.weight(1f).height(52.dp)) { Text("Importálás") }
             }
+            Spacer(Modifier.height(8.dp))
+            TextButton(onClick = { app.navigate(Screen.Settings) }, modifier = Modifier.fillMaxWidth()) { Text("Beállítások") }
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -108,7 +114,7 @@ fun GameSummaryCard(
         title = g.players.joinToString(" · ") { it.name },
         subtitle = buildString {
             append(Format.statusText(g.status))
-            append(" · ${g.rounds.size} kör · ")
+            append(" · ${g.playedRounds.size} kör · ")
             if (g.status == GameStatus.FINISHED) {
                 val winner = g.players.maxByOrNull { st.final(it.id) }
                 append("győztes: ${winner?.name}")

@@ -22,6 +22,8 @@ import hu.rmz.prefiscore.ui.NewGameScreen
 import hu.rmz.prefiscore.ui.PrefiTheme
 import hu.rmz.prefiscore.ui.RulesScreen
 import hu.rmz.prefiscore.ui.Screen
+import hu.rmz.prefiscore.ui.SettingsScreen
+import hu.rmz.prefiscore.ui.SheetImportScreen
 import hu.rmz.prefiscore.ui.StatsScreen
 import hu.rmz.prefiscore.ui.toast
 
@@ -94,5 +96,10 @@ private fun AppRoot(app: AppState) {
         Screen.History -> HistoryScreen(app, onImport)
         Screen.Stats -> StatsScreen(app)
         Screen.Rules -> RulesScreen(app)
+        Screen.Settings -> SettingsScreen(app)
+        Screen.SheetImport -> {
+            val f = app.sheetFlow
+            if (f != null) SheetImportScreen(app, f) else HomeScreen(app, onImport)
+        }
     }
 }

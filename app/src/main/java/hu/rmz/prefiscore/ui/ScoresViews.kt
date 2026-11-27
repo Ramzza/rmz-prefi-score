@@ -167,11 +167,13 @@ fun RoundsView(game: Game, standing: Standing) {
         val r = res.round
         InfoCard(Modifier.padding(bottom = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("#${r.number}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(44.dp))
+                Text(if (r.isAdjustment) "K" else "#${r.number}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(44.dp))
                 Column(Modifier.weight(1f)) {
                     Text(Format.roundTitle(game, r), style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Osztó: ${game.name(r.dealerId)} · ${Format.duration(r.durationMs)}" +
+                        if (r.isAdjustment) "Következő osztó: ${game.name(r.dealerId)} · ${Format.dateTime(r.endedAt)}" +
+                            (if (res.druzsAdded != 0 || res.druzsCrossed != 0) " · druzs ${Format.signed(res.druzsAdded)}/${Format.signed(res.druzsCrossed)}" else "")
+                        else "Osztó: ${game.name(r.dealerId)} · ${Format.duration(r.durationMs)}" +
                             (if (res.value > 0) " · érték ${res.value}" else "") +
                             (if (res.druzsActive) " · druzs" else ""),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -180,7 +182,7 @@ fun RoundsView(game: Game, standing: Standing) {
             }
             if (r.tricks.isNotEmpty()) Text("Vitelek: ${Format.tricksText(game, r)}", style = MaterialTheme.typography.bodySmall)
             val parts = res.upper.map { "${game.name(it.key)} ${Format.signed(it.value)}" } +
-                res.pince.map { "${game.name(it.ownerId)}→${game.name(it.targetId)} +${it.amount}" }
+                res.pince.map { "${game.name(it.ownerId)}→${game.name(it.targetId)} ${Format.signed(it.amount)}" }
             if (parts.isNotEmpty()) Text(parts.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
             if (r.kind == hu.rmz.prefiscore.model.RoundKind.GAME && r.game != null && res.value > 0) {
                 val m = Scoring.multiplierText(r.talon, r.felkez, r.contra, res.druzsActive)

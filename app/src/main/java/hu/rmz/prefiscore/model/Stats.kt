@@ -77,6 +77,7 @@ object StatsCalculator {
         }
         for (res in standing.results) {
             val r = res.round
+            if (r.isAdjustment) continue
             for (id in r.playingIds) stats(id).roundsPlayed++
             if (r.kind == RoundKind.KORPASSZ) {
                 for (id in r.playingIds) {
@@ -107,7 +108,7 @@ object StatsCalculator {
     fun overall(games: List<Game>): OverallStats {
         val map = linkedMapOf<String, PlayerStats>()
         games.forEach { accumulate(it, map) }
-        val rounds = games.flatMap { it.rounds }
+        val rounds = games.flatMap { it.playedRounds }
         val durations = rounds.map { it.durationMs }.filter { it > 0 }
         val byType = sortedMapOf<Int, TypeCount>()
         for (r in rounds) if (r.kind == RoundKind.GAME) {
@@ -129,7 +130,7 @@ object StatsCalculator {
             longestRoundMs = durations.maxOrNull() ?: 0,
             totalPlayMs = games.sumOf { it.playTimeMs },
             avgGameMs = if (finishedGames.isEmpty()) 0 else finishedGames.sumOf { it.playTimeMs } / finishedGames.size,
-            avgRoundsPerFinishedGame = if (finishedGames.isEmpty()) 0.0 else finishedGames.sumOf { it.rounds.size }.toDouble() / finishedGames.size,
+            avgRoundsPerFinishedGame = if (finishedGames.isEmpty()) 0.0 else finishedGames.sumOf { it.playedRounds.size }.toDouble() / finishedGames.size,
             byType = byType,
             players = map.values.sortedWith(compareByDescending<PlayerStats> { it.games }.thenBy { it.name }),
         )
@@ -138,14 +139,15 @@ object StatsCalculator {
     fun forGame(game: Game): GameStats {
         val map = linkedMapOf<String, PlayerStats>()
         accumulate(game, map)
-        val durations = game.rounds.map { it.durationMs }.filter { it > 0 }
+        val played = game.playedRounds
+        val durations = played.map { it.durationMs }.filter { it > 0 }
         return GameStats(
-            rounds = game.rounds.size,
+            rounds = played.size,
             avgRoundMs = if (durations.isEmpty()) 0 else durations.sum() / durations.size,
             longestRoundMs = durations.maxOrNull() ?: 0,
             shortestRoundMs = durations.minOrNull() ?: 0,
             playMs = game.playTimeMs,
-            korpassz = game.rounds.count { it.kind == RoundKind.KORPASSZ },
+            korpassz = played.count { it.kind == RoundKind.KORPASSZ },
             perPlayer = map.values.toList(),
         )
     }
