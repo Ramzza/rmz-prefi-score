@@ -1,0 +1,9 @@
+.gradle/
+build/
+app/build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+dist/
+signal-2026-11-26-20-52-11-201.jpg
